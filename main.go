@@ -8,7 +8,7 @@ import (
 
 type levels map[int]bool
 
-func printLine(writer io.Writer, file os.FileInfo, level levels) {
+func printLine(writer io.Writer, fileName string, levelMap levels, level int) {
 	sym := map[bool]string{
 		true:  "└",
 		false: "├",
@@ -18,19 +18,41 @@ func printLine(writer io.Writer, file os.FileInfo, level levels) {
 		true:  "",
 		false: "│",
 	}
-	//println(len(level))
-	for i, j := range level {
+	//println(len(levelMap))
+	for i := 0; i < level; i++ {
 		switch i {
-		case len(level) - 1:
-			fmt.Fprint(writer, sym[j]+"───")
+		case level - 1:
+			fmt.Fprint(writer, sym[levelMap[i]]+"───")
 		default:
-			fmt.Fprint(writer, symTab[j]+"	")
+			//fmt.Fprint(writer, symTab[levelMap[i]]+"	")
+			if levelMap[i] {
+				fmt.Fprint(writer, symTab[levelMap[i]]+"───")
+			} else {
+				fmt.Fprint(writer, symTab[levelMap[i]]+"	")
+			}
+
 		}
+
 	}
-	fmt.Fprintln(writer, file.Name())
+
+	fmt.Fprintln(writer, fileName)
 }
 
-func cOutTree(writer io.Writer, path string, printFiles bool, level levels) error {
+func onlyToWant(files *[]os.FileInfo, printFiles bool) {
+
+	if !printFiles {
+		for i := len(*files) - 1; i >= 0; i-- {
+			// name := (*files)[i].Name()
+			// isdir := (*files)[i].IsDir()
+			// fmt.Println(name)
+			if !(*files)[i].IsDir() {
+				*files = append((*files)[:i], (*files)[i+1:]...)
+			}
+		}
+	}
+}
+
+func cOutTree(writer io.Writer, path string, printFiles bool, levelMap levels, itLevel int) error {
 
 	f, err := os.Open(path)
 	defer f.Close()
@@ -42,18 +64,16 @@ func cOutTree(writer io.Writer, path string, printFiles bool, level levels) erro
 	if err != nil {
 		return err
 	}
-	cnt := len(level) - 1
+	onlyToWant(&files, printFiles)
+	for _, file := range files {
+		fileName := file.Name()
+		//levelMap[itLevel] = i == (len(files) - 1)
+		printLine(writer, fileName, levelMap, itLevel)
 
-	for i, file := range files {
-		level[cnt] = i == len(files)-1
-		if !file.IsDir() && !printFiles {
-			continue
-		} else {
-			printLine(writer, file, level)
-		}
 		if file.IsDir() {
-			level[cnt+1] = false
-			cOutTree(writer, path+string(os.PathSeparator)+file.Name(), printFiles, level)
+			levelMap[itLevel] = true
+			levelMap[itLevel+1] = false
+			cOutTree(writer, path+string(os.PathSeparator)+fileName, printFiles, levelMap, itLevel+1)
 		}
 	}
 	return nil
@@ -66,7 +86,8 @@ func dirTree(writer io.Writer, path string, printFiles bool) error {
 		0: false,
 		//		1: false,
 	}
-	return cOutTree(writer, path, printFiles, lev)
+	printLine(writer, path, lev, 0)
+	return cOutTree(writer, path, printFiles, lev, 1)
 
 }
 
