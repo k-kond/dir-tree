@@ -84,7 +84,7 @@ func dirTree(writer io.Writer, path string, printFiles bool) error {
 	lev := levels{
 		0: false,
 	}
-	fmt.Fprintln(writer, path)
+	//fmt.Fprintln(writer, path)
 	return cOutTree(writer, path, printFiles, &lev, 0)
 
 }
