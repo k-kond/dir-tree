@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -67,6 +68,9 @@ func cOutTree(writer io.Writer, path string, printFiles bool, levelMap *levels, 
 		return err
 	}
 	onlyToWant(&files, printFiles)
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].Name() < files[j].Name()
+	})
 	for i, file := range files {
 		fileName := file.Name()
 		(*levelMap)[itLevel] = i == (len(files) - 1) // end of list?
